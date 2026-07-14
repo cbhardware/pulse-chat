@@ -1,0 +1,89 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum ParticipantType {
+  APP_USER
+  SMS_USER
+}
+
+enum MessageType {
+  TEXT
+  IMAGE
+  VIDEO
+  AUDIO
+}
+
+model User {
+  id           String        @id @default(uuid())
+  phoneNumber  String        @unique // E.164 formatted, e.g., +1234567890
+  passwordHash String?
+  name         String?
+  avatarUrl    String?
+  isAppUser    Boolean       @default(true) // True if registered app user, False if SMS only
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  memberships  GroupMember[]
+  messages     Message[]
+  refreshTokens RefreshToken[]
+}
+
+model RefreshToken {
+  id         String   @id @default(uuid())
+  userId     String
+  tokenHash  String   @unique
+  expiresAt  DateTime
+  revokedAt  DateTime?
+  createdAt  DateTime @default(now())
+
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model Group {
+  id           String        @id @default(uuid())
+  name         String
+  description  String?
+  avatarUrl    String?
+  twilioNumber String?       // Dedicated Twilio proxy phone number assigned to this group for SMS routing
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  members      GroupMember[]
+  messages     Message[]
+}
+
+model GroupMember {
+  id              String          @id @default(uuid())
+  groupId         String
+  userId          String
+  participantType ParticipantType @default(APP_USER)
+  joinedAt        DateTime        @default(now())
+
+  group           Group           @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  user            User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([groupId, userId])
+}
+
+model Message {
+  id             String        @id @default(uuid())
+  groupId        String
+  senderId       String
+  content        String?       // Text message content
+  messageType    MessageType   @default(TEXT)
+  mediaUrl       String?       // URL to image/video in AWS S3 / Cloudflare R2
+  mediaMimeType  String?       // e.g., image/jpeg, video/mp4
+  createdAt      DateTime      @default(now())
+
+  group          Group         @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  sender         User          @relation(fields: [senderId], references: [id], onDelete: Cascade)
+}

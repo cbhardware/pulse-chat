@@ -1,0 +1,17 @@
+process.env.NODE_ENV = 'test';
+process.env.PORT = '3001';
+process.env.APP_URL = 'http://localhost:3001';
+process.env.DATABASE_URL = 'postgresql://test:test@localhost:5432/test?schema=public';
+process.env.JWT_SECRET = 'test_jwt_secret_that_is_longer_than_32_characters';
+process.env.JWT_EXPIRES_IN = '7d';
+process.env.JWT_REFRESH_SECRET = 'test_refresh_secret_that_is_longer_than_32_chars';
+process.env.JWT_REFRESH_EXPIRES_IN = '30d';
+process.env.S3_BUCKET_NAME = 'test-bucket';
+process.env.S3_REGION = 'auto';
+process.env.S3_ACCESS_KEY_ID = 'test-access-key';
+process.env.S3_SECRET_ACCESS_KEY = 'test-secret-key';
+process.env.S3_ENDPOINT = 'https://example.r2.cloudflarestorage.com';
+process.env.MEDIA_BASE_URL = 'https://media.example.com';
+process.env.TWILIO_ACCOUNT_SID = '';
+process.env.TWILIO_AUTH_TOKEN = '';
+process.env.TWILIO_DEFAULT_PHONE_NUMBER = '+18005551234';
