@@ -8,7 +8,7 @@ const router: Router = express.Router();
  * Twilio status callback endpoint for outbound SMS/MMS delivery events.
  * Configure TWILIO_STATUS_CALLBACK_URL to point here.
  */
-router.post('/twilio/status', (req: Request, res: Response) => {
+router.post('/twilio/status', async (req: Request, res: Response) => {
   const {
     MessageSid,
     MessageStatus,
@@ -18,16 +18,29 @@ router.post('/twilio/status', (req: Request, res: Response) => {
     ErrorMessage,
   } = req.body;
 
-  console.log('[Twilio Status Callback]', {
-    messageSid: MessageSid,
-    status: MessageStatus,
-    to: To,
-    from: From,
-    errorCode: ErrorCode || null,
-    errorMessage: ErrorMessage || null,
-  });
+  try {
+    await prisma.messageDelivery.updateMany({
+      where: { twilioMessageSid: MessageSid },
+      data: {
+        status: MessageStatus || 'unknown',
+        errorCode: ErrorCode || null,
+        errorMessage: ErrorMessage || null,
+      },
+    });
 
-  res.type('text/xml').send('<Response></Response>');
+    console.log('[Twilio Status Callback]', {
+      messageSid: MessageSid,
+      status: MessageStatus,
+      to: To,
+      from: From,
+      errorCode: ErrorCode || null,
+      errorMessage: ErrorMessage || null,
+    });
+    res.type('text/xml').send('<Response></Response>');
+  } catch (error) {
+    console.error('[Twilio Status Callback Error]:', error);
+    res.type('text/xml').send('<Response></Response>');
+  }
 });
 
 /**
@@ -124,12 +137,23 @@ router.post('/twilio/incoming', async (req: Request, res: Response) => {
 
     for (const member of otherSmsMembers) {
       const prefixName = user.name ? `[${user.name}]: ` : '';
-      await sendNativeSmsMms({
+      const twilioMessageSid = await sendNativeSmsMms({
         to: member.user.phoneNumber,
         from: twilioNumber,
         body: bodyText ? `${prefixName}${bodyText}` : prefixName.trim(),
         mediaUrls: mediaUrl ? [mediaUrl] : undefined,
       });
+
+      if (twilioMessageSid) {
+        await prisma.messageDelivery.create({
+          data: {
+            messageId: newMessage.id,
+            recipientPhone: member.user.phoneNumber,
+            twilioMessageSid,
+            status: 'queued',
+          },
+        });
+      }
     }
 
     // Return empty TwiML response to Twilio

@@ -166,12 +166,23 @@ router.post('/groups/:groupId/messages', async (req: Request, res: Response) => 
       const smsMembers = group.members.filter((m: { user: { isAppUser: boolean; id: string; phoneNumber: string; name: string | null } }) => !m.user.isAppUser && m.user.id !== senderId);
       for (const member of smsMembers) {
         const prefix = message.sender.name ? `[${message.sender.name}]: ` : '';
-        await sendNativeSmsMms({
+        const twilioMessageSid = await sendNativeSmsMms({
           to: member.user.phoneNumber,
           from: group.twilioNumber || undefined,
           body: content ? `${prefix}${content}` : prefix.trim(),
           mediaUrls: mediaUrl ? [mediaUrl] : undefined,
         });
+
+        if (twilioMessageSid) {
+          await prisma.messageDelivery.create({
+            data: {
+              messageId: message.id,
+              recipientPhone: member.user.phoneNumber,
+              twilioMessageSid,
+              status: 'queued',
+            },
+          });
+        }
       }
     }
 
