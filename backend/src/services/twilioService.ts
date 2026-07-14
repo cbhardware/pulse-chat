@@ -13,6 +13,7 @@ export const twilioClient = accountSid && accountSid.startsWith('AC')
   : null;
 
 export const TWILIO_DEFAULT_NUMBER = env.TWILIO_DEFAULT_PHONE_NUMBER;
+export const TWILIO_STATUS_CALLBACK_URL = env.TWILIO_STATUS_CALLBACK_URL;
 
 /**
  * Send an SMS or native MMS (with attached picture/video without links) to a recipient.
@@ -37,6 +38,7 @@ export async function sendNativeSmsMms(options: {
       from,
       body: body || undefined,
       mediaUrl: mediaUrls && mediaUrls.length > 0 ? mediaUrls : undefined,
+      statusCallback: TWILIO_STATUS_CALLBACK_URL,
     });
     console.log(`[Twilio] Sent MMS/SMS to ${to} (SID: ${message.sid})`);
     return message.sid;

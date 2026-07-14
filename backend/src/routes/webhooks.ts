@@ -5,6 +5,32 @@ import { sendNativeSmsMms } from '../services/twilioService.js';
 const router: Router = express.Router();
 
 /**
+ * Twilio status callback endpoint for outbound SMS/MMS delivery events.
+ * Configure TWILIO_STATUS_CALLBACK_URL to point here.
+ */
+router.post('/twilio/status', (req: Request, res: Response) => {
+  const {
+    MessageSid,
+    MessageStatus,
+    To,
+    From,
+    ErrorCode,
+    ErrorMessage,
+  } = req.body;
+
+  console.log('[Twilio Status Callback]', {
+    messageSid: MessageSid,
+    status: MessageStatus,
+    to: To,
+    from: From,
+    errorCode: ErrorCode || null,
+    errorMessage: ErrorMessage || null,
+  });
+
+  res.type('text/xml').send('<Response></Response>');
+});
+
+/**
  * Twilio Webhook Endpoint for Incoming SMS/MMS messages
  * When a regular phone user sends a text or picture/video to our Twilio number, Twilio POSTs here.
  */

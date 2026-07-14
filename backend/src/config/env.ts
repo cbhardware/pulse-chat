@@ -23,6 +23,7 @@ const rawEnvSchema = z
     TWILIO_ACCOUNT_SID: z.preprocess(emptyToUndefined, z.string().optional()),
     TWILIO_AUTH_TOKEN: z.preprocess(emptyToUndefined, z.string().optional()),
     TWILIO_DEFAULT_PHONE_NUMBER: z.string().default('+18005551234'),
+    TWILIO_STATUS_CALLBACK_URL: z.preprocess(emptyToUndefined, z.string().url().optional()),
     S3_BUCKET_NAME: z.string().min(1, 'S3_BUCKET_NAME is required'),
     S3_REGION: z.string().default('auto'),
     S3_ACCESS_KEY_ID: z.string().min(1, 'S3_ACCESS_KEY_ID is required'),
