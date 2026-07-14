@@ -2,6 +2,7 @@ import { Server as SocketIOServer, Socket } from 'socket.io';
 import { Server as HttpServer } from 'http';
 import prisma from '../db/prisma.js';
 import { verifyAuthToken } from '../services/authService.js';
+import { allowedFrontendOrigins } from '../config/env.js';
 
 type AuthedSocket = Socket & {
   data: {
@@ -28,8 +29,16 @@ function getTokenFromHandshake(socket: Socket): string | null {
 export function setupSocketServer(httpServer: HttpServer): SocketIOServer {
   const io = new SocketIOServer(httpServer, {
     cors: {
-      origin: '*',
+      origin: (origin, callback) => {
+        if (!origin || allowedFrontendOrigins.includes(origin)) {
+          callback(null, true);
+          return;
+        }
+
+        callback(new Error(`Socket CORS blocked for origin: ${origin}`));
+      },
       methods: ['GET', 'POST'],
+      credentials: true,
     },
   });
 

@@ -15,6 +15,7 @@ const rawEnvSchema = z
     NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
     PORT: z.coerce.number().int().positive().default(3000),
     APP_URL: z.preprocess(emptyToUndefined, z.string().url().optional()),
+    FRONTEND_ORIGINS: z.preprocess(emptyToUndefined, z.string().optional()),
     DATABASE_URL: z.string().min(1, 'DATABASE_URL is required'),
     JWT_SECRET: z.string().min(32, 'JWT_SECRET must be at least 32 characters long'),
     JWT_EXPIRES_IN: z.string().default('7d'),
@@ -56,3 +57,16 @@ if (!parsedEnv.success) {
 }
 
 export const env = parsedEnv.data;
+
+const fallbackDevOrigins = ['http://localhost:5173', 'http://127.0.0.1:5173'];
+
+const configuredOrigins = [
+  ...(env.FRONTEND_ORIGINS
+    ? env.FRONTEND_ORIGINS.split(',').map((value) => value.trim()).filter(Boolean)
+    : []),
+  ...(env.APP_URL ? [env.APP_URL] : []),
+];
+
+export const allowedFrontendOrigins = Array.from(
+  new Set(configuredOrigins.length > 0 ? configuredOrigins : fallbackDevOrigins)
+);
