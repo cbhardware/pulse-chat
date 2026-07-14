@@ -4,6 +4,10 @@ import { sendNativeSmsMms } from '../services/twilioService.js';
 
 const router: Router = express.Router();
 
+function normalizePhone(value: string | null | undefined): string {
+  return (value || '').replace(/\D/g, '');
+}
+
 /**
  * Twilio status callback endpoint for outbound SMS/MMS delivery events.
  * Configure TWILIO_STATUS_CALLBACK_URL to point here.
@@ -76,7 +80,7 @@ router.post('/twilio/incoming', async (req: Request, res: Response) => {
     }
 
     // 2. Identify the Group chat associated with this Twilio proxy number
-    const group = await prisma.group.findFirst({
+    let group = await prisma.group.findFirst({
       where: { twilioNumber: twilioNumber },
       include: {
         members: {
@@ -85,8 +89,27 @@ router.post('/twilio/incoming', async (req: Request, res: Response) => {
       },
     });
 
+    if (!group && twilioNumber) {
+      const normalizedTo = normalizePhone(twilioNumber);
+      const groupsWithNumbers = await prisma.group.findMany({
+        where: { twilioNumber: { not: null } },
+        include: {
+          members: {
+            include: { user: true },
+          },
+        },
+      });
+
+      group = groupsWithNumbers.find((g) => normalizePhone(g.twilioNumber) === normalizedTo) || null;
+    }
+
     if (!group) {
+      const configuredGroups = await prisma.group.findMany({
+        select: { id: true, name: true, twilioNumber: true },
+      });
+
       console.warn(`[Twilio Webhook] No group found assigned to Twilio number ${twilioNumber}`);
+      console.warn('[Twilio Webhook] Configured groups:', configuredGroups);
       // Respond to Twilio with TwiML acknowledging receipt
       res.type('text/xml').send('<Response></Response>');
       return;
