@@ -14,9 +14,10 @@ const io = setupSocketServer(server);
 app.set('io', io);
 
 const PORT = env.PORT;
+const HOST = '0.0.0.0';
 
-server.listen(PORT, () => {
-  console.log(`🚀 [PulseChat Server] Running on http://localhost:${PORT}`);
+server.listen(PORT, HOST, () => {
+  console.log(`🚀 [PulseChat Server] Running on http://${HOST}:${PORT}`);
   console.log(`📡 [Socket.io] Real-time websocket engine active`);
   console.log(`📲 [Twilio MMS] Webhook endpoint ready at http://localhost:${PORT}/api/webhooks/twilio/incoming`);
 });
